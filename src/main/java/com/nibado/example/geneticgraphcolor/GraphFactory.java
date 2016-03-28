@@ -15,8 +15,18 @@ public class GraphFactory {
     public Graph randomGraph(int points, int width, int height) {
         List<Coordinate> coordinates = new ArrayList<>(points);
 
-        for(int i = 0;i < points;i++) {
-            coordinates.add(new Coordinate(RANDOM.nextInt(width), RANDOM.nextInt(height)));
+        while(coordinates.size() < points) {
+            Coordinate c = new Coordinate(RANDOM.nextInt(width), RANDOM.nextInt(height));
+            boolean tooClose = false;
+            for(Coordinate c2 : coordinates) {
+                if(c2.distance(c) < 16.0) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if(!tooClose) {
+                coordinates.add(c);
+            }
         }
 
         return createGraph(coordinates);
