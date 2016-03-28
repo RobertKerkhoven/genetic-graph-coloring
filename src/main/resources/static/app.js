@@ -3,7 +3,7 @@ var appModule = angular.module('myApp', []);
 appModule.controller('MainCtrl', ['mainService','$scope', '$interval', function(mainService, $scope, $interval) {
     $scope.title = 'Welcome to the Genetic Graph Coloring Demo!';
 
-    mainService.random(100, 800, 600).then(function(graph) {
+    mainService.random(1000, 800, 600).then(function(graph) {
         $scope.graph = graph;
 
         $scope.$root.$broadcast('new-data', graph);

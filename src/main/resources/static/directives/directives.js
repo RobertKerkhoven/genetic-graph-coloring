@@ -26,6 +26,7 @@ appModule.directive('graph', ['mainService', function(mainService) {
              }
 
              function drawPolygon(ctx, polygon) {
+                ctx.fillStyle = "orange";
                 ctx.beginPath();
 
                 angular.forEach(polygon.coordinates, function(c) {
@@ -34,7 +35,7 @@ appModule.directive('graph', ['mainService', function(mainService) {
 
                 ctx.fill();
 
-                ctx.fillStyle = "orange";
+
                 ctx.beginPath();
 
                 angular.forEach(polygon.coordinates, function(c) {
