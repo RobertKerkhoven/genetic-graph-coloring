@@ -1,23 +1,25 @@
 package com.nibado.example.geneticgraphcolor;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Point;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@RestController
-public class StatusController {
-    private final static Logger LOG = LoggerFactory.getLogger(StatusController.class);
+@org.springframework.web.bind.annotation.RestController
+public class RestController {
+    private final static Logger LOG = LoggerFactory.getLogger(RestController.class);
 
     @Autowired
     private GraphFactory graphFactory;
+
+    @Autowired
+    private ColorFactory colorFactory;
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public Graph createGraph(@RequestBody List<Coordinate> coordinates) {
@@ -31,6 +33,11 @@ public class StatusController {
         LOG.debug("Random(points={}, w={}, h={})", request.points, request.width, request.height);
 
         return graphFactory.randomGraph(request.points, request.width, request.height);
+    }
+
+    @RequestMapping(value = "/colors/{number}", method = RequestMethod.GET)
+    public List<String> createColors(@PathVariable int number) {
+        return colorFactory.createStrings(number);
     }
 
     private static class RandomRequest {
