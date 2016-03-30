@@ -8,14 +8,42 @@
         <meta name="viewport" content="width=device-width">
         <link rel="stylesheet" href="lib/css/bootstrap.min.css">
         <link rel="stylesheet" href="lib/css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="style.css">
 
         <script src="lib/angular.min.js"></script>
+        <script src="lib/sockjs-0.3.4.js"></script>
+        <script src="lib/stomp.js"></script>
+
         <script src="app.js"></script>
         <script src="directives/directives.js"></script>
     </head>
     <body>
         <div class="container">
-            <graph data="graph"></graph>
+            <div class="bg-danger" ng-show="status.status=='error'">
+                <h1>Error</h1>
+                <p>
+                    It seems we can't connect to the back-end. Make sure
+                    it's running and that you use a browser that supports websockets.
+                </p>
+            </div>
+            <div class="row">
+                <div class="col-md-1">
+                    <span ng-if="connected" class="glyphicon glyphicon-thumbs-up connect-ok" aria-hidden="true"></span>
+                    <span ng-if="!connected" class="glyphicon glyphicon-thumbs-down connect-nok" aria-hidden="true"></span>
+                </div>
+                <div class="col-md-2">Status: {{status.status}}</div>
+                <div class="col-md-9">
+                    <span ng-show="connected">
+                        <button class="btn btn-success" ng-click="start()" ng-disabled="status.status == 'RUNNING'">Start</button>
+                    </span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <graph></graph>
+                </div>
+            </div>
         </div>
+    <div>{{status.time}}</div>
     </body>
 </html>

@@ -1,27 +1,130 @@
 var appModule = angular.module('myApp', []);
 
-appModule.controller('MainCtrl', ['mainService','$scope', '$interval', function(mainService, $scope, $interval) {
+appModule.controller('MainCtrl', ['socketService', 'graphService', '$scope', '$interval', function(socketService, graphService, $scope, $interval) {
     $scope.title = 'Welcome to the Genetic Graph Coloring Demo!';
 
-    mainService.random(1000, 800, 600).then(function(graph) {
-        $scope.graph = graph;
+    $scope.cells = 1000;
+    $scope.connected = false;
 
-        $scope.$root.$broadcast('new-data', graph);
+    socketService.addListener(function(status) {
+        $scope.status = status;
+        $scope.connected = status.status != 'error';
+
+        $scope.$apply();
+        if($scope.status != 'READY' && !graphService.hasGraph()) {
+            socketService.getGraph();
+        }
     });
+
+    socketService.connect(function(message) {
+        $scope.message = message;
+        graphService.update(message);
+        $scope.$apply();
+        //$scope.$root.$broadcast('new-data');
+        console.log(message);
+    });
+
+    $scope.start = function() {
+        socketService.start(1000, 800, 600);
+    }
 }]);
 
-appModule.service('mainService', function($http) {
+appModule.service('graphService', function() {
+    var graphInfo = null;
+    var indices = null;
+    var listeners = [];
+
     return {
-         create : function(coordinates) {
-            return $http.post('/create', coordinates).then(function(response) {
-                return response.data;
+        setGraphInfo: function(info) {
+            graphInfo = info;
+            this.notifyListeners();
+        },
+
+        update: function(message) {
+            indices = message.colors;
+            this.notifyListeners();
+        },
+
+        getGraph: function() {
+            return graphInfo.graph;
+        },
+
+        hasGraph: function() {
+            return graphInfo && graphInfo.graph;
+        },
+
+        getColor: function(index) {
+            var i = index;
+            if(indices) {
+                i = indices[index];
+            }
+
+            return graphInfo.colors[i];
+        },
+
+        addListener: function(callback) {
+            listeners.push(callback);
+        },
+
+        notifyListeners: function() {
+            angular.forEach(listeners, function(cb) {
+                cb();
+            });
+        }
+    }
+});
+
+appModule.service('socketService', ['$rootScope', 'graphService', function($rootScope, graphService) {
+    var listeners = [];
+    var stompClient;
+    return {
+        connect: function() {
+            var self = this;
+            var socket = new SockJS('/socket');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null;
+            stompClient.connect({}, function(frame) {
+                self.notifyListeners({'status':'connected'});
+                stompClient.subscribe('/topic/graph', function(message) {
+                    graphService.setGraphInfo(JSON.parse(message.body));
+                });
+                stompClient.subscribe('/topic/status', function(message) {
+                    self.notifyListeners(JSON.parse(message.body));
+                });
+                stompClient.subscribe('/topic/update', function(message) {
+                    graphService.update(JSON.parse(message.body));
+                });
+
+                stompClient.send("/app/status", {}, JSON.stringify({}));
+            },
+            function(error) {
+                self.notifyListeners({'status':'error'});
             });
         },
 
-        random : function(points, width, height) {
-            return $http.post('/random', {points:points, width: width, height: height}).then(function(response) {
-                return response.data;
+        start: function(points, width, height) {
+            stompClient.send("/app/start", {}, JSON.stringify({points: points, width: width, height: height}));
+        },
+
+        getGraph: function() {
+            stompClient.send("/app/graph", {}, JSON.stringify({}));
+        },
+
+        addListener: function(callback) {
+            listeners.push(callback);
+        },
+
+        notifyListeners: function(status) {
+            angular.forEach(listeners, function(cb) {
+                cb(status);
             });
+        },
+
+        disconnect: function() {
+            if (stompClient != null) {
+                stompClient.disconnect();
+            }
+            console.log("Disconnected");
         }
     };
-});
+}]);

@@ -1,6 +1,6 @@
 var appModule = angular.module('myApp');
 
-appModule.directive('graph', ['mainService', function(mainService) {
+appModule.directive('graph', ['graphService', function(graphService) {
     return {
          restrict: 'E',
          templateUrl: 'directives/graph.html',
@@ -9,24 +9,30 @@ appModule.directive('graph', ['mainService', function(mainService) {
             data:"="
          },
          controller: function($scope) {
-             function drawGraph(graph) {
+             $scope.drawGraph = function() {
+                 if(!graphService.hasGraph()) {
+                    return;
+                 }
+                 var graph = graphService.getGraph();
+
                  var canvas = document.getElementById('canvas');
                  var ctx = canvas.getContext('2d');
 
-                 angular.forEach(graph.polygons, function(p) {
-                    drawPolygon(ctx, p);
+                 angular.forEach(graph.polygons, function(p, i) {
+                    var color = graphService.getColor(i);
+                    $scope.drawPolygon(ctx, p, color);
                  });
 
-                ctx.fillStyle = "black";
+                 ctx.fillStyle = 'black';
                  angular.forEach(graph.coordinates, function(c) {
                     ctx.beginPath();
-                    ctx.arc(c.x,c.y, 4, 0, Math.PI*2, true); // Outer circle
+                    ctx.arc(c.x,c.y, 4, 0, Math.PI * 2, true); // Outer circle
                     ctx.fill();
                  });
              }
 
-             function drawPolygon(ctx, polygon) {
-                ctx.fillStyle = "orange";
+             $scope.drawPolygon = function(ctx, polygon, color) {
+                ctx.fillStyle = color;
                 ctx.beginPath();
 
                 angular.forEach(polygon.coordinates, function(c) {
@@ -46,9 +52,13 @@ appModule.directive('graph', ['mainService', function(mainService) {
 
              }
 
+             /*
              $scope.$on('new-data', function(scope, argument) {
-                 drawGraph(argument);
+                 $scope.drawGraph();
              }, true);
+             */
+
+             graphService.addListener($scope.drawGraph);
          }
 
     };
