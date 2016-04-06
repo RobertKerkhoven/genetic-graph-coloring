@@ -25,7 +25,7 @@ appModule.controller('MainCtrl', ['socketService', 'graphService', '$scope', '$i
     });
 
     $scope.start = function() {
-        socketService.start(1000, 800, 600);
+        socketService.start(100, 800, 600);
     }
 }]);
 
@@ -33,20 +33,27 @@ appModule.service('graphService', function() {
     var graphInfo = null;
     var indices = null;
     var listeners = [];
+    var updates = [];
 
     return {
         setGraphInfo: function(info) {
             graphInfo = info;
+            updates.length = 0;
             this.notifyListeners();
         },
 
         update: function(message) {
             indices = message.colors;
+            updates.push(message);
             this.notifyListeners();
         },
 
         getGraph: function() {
             return graphInfo.graph;
+        },
+
+        getUpdates: function() {
+            return updates;
         },
 
         hasGraph: function() {

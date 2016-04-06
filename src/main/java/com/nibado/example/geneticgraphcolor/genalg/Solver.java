@@ -8,15 +8,20 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+
+import static java.lang.System.currentTimeMillis;
 
 public class Solver {
     private static final int GENERATION_SIZE = 500;
     private static final Random RANDOM = new Random();
     private Graph graph;
     private List<int[]> adjacency;
+    private BiConsumer<Integer, NodeColors> updateConsumer = (gen, c) -> System.out.printf(Locale.ROOT, "%6s:\t%s\n", gen, c.getScore());
 
     private List<NodeColors> generation = new ArrayList<>(GENERATION_SIZE * 2);
 
@@ -27,27 +32,37 @@ public class Solver {
     public void solve(int maxGenerations) {
         adjacency = buildAdjacencyList(graph);
         int prevScore = -1;
+        long lastUpdate = 0;
         for(int i = 0;i < maxGenerations;i++) {
             fillToSize();
+            if(i == 0) {
+                updateConsumer.accept(i, generation.get(0));
+                lastUpdate = currentTimeMillis();
+            }
             cross(100);
             mutate(100);
             sortList();
             generation = new ArrayList<>(generation.subList(0, GENERATION_SIZE / 2));
             int score = generation.get(0).getScore();
-            if(prevScore != score) {
-                System.out.printf("%s:\t%s\n", i, generation.get(0).getScore());
+            if(prevScore != score || (currentTimeMillis() - lastUpdate) > 100) {
+                updateConsumer.accept(i, generation.get(0));
                 prevScore = score;
+                lastUpdate = currentTimeMillis();
             }
         }
     }
 
-    public void fillToSize() {
+    public void setUpdateConsumer(BiConsumer<Integer, NodeColors> updateConsumer) {
+        this.updateConsumer = updateConsumer;
+    }
+
+    private void fillToSize() {
         while(generation.size() < GENERATION_SIZE) {
             generation.add(createRandom(graph.getCoordinates().size(), adjacency));
         }
     }
 
-    public void cross(int x)  {
+    private void cross(int x)  {
         x = Math.min(x, GENERATION_SIZE);
         for(int i = 0;i < x;i++) {
             int[] pair = randomPair();
@@ -58,7 +73,7 @@ public class Solver {
         }
     }
 
-    public void mutate(int x) {
+    private void mutate(int x) {
         for(int i = 0;i < x;i++) {
             NodeColors c = mutate(generation.get(RANDOM.nextInt(generation.size())));
             if(c.isValid()) {
@@ -67,7 +82,7 @@ public class Solver {
         }
     }
 
-    public NodeColors cross(NodeColors a, NodeColors b) {
+    private NodeColors cross(NodeColors a, NodeColors b) {
         int[] colorsA = a.getColors();
         int[] colorsB = b.getColors();
         int[] colors = new int[colorsA.length];
@@ -80,7 +95,7 @@ public class Solver {
         return new NodeColors(colors, adjacency);
     }
 
-    public NodeColors mutate(NodeColors c) {
+    private NodeColors mutate(NodeColors c) {
         int[] colors = Arrays.copyOf(c.getColors(), c.getColors().length);
 
         int a = RANDOM.nextInt(colors.length);
@@ -109,9 +124,9 @@ public class Solver {
             int fromIndex = nodeMap.get(edge.from);
             int toIndex = nodeMap.get(edge.to);
 
-            if(!list.get(toIndex).contains(fromIndex)) {
+            //if(!list.get(toIndex).contains(fromIndex)) {
                 list.get(fromIndex).add(toIndex);
-            }
+            //}
         }
 
         return list.stream().map(Solver::toIntArray).collect(Collectors.toList());

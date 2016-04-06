@@ -1,11 +1,14 @@
 package com.nibado.example.geneticgraphcolor;
 
+import com.nibado.example.geneticgraphcolor.genalg.Solver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 @Component
@@ -18,6 +21,7 @@ public class GraphSolver implements Runnable {
 
     private Graph graph;
     private SolverState state = SolverState.READY;
+    private Solver solver;
     private Thread thread;
     private int[] colorIndices;
     private int unique;
@@ -46,22 +50,11 @@ public class GraphSolver implements Runnable {
 
     @Override
     public void run() {
+        solver = new Solver(graph);
+        solver.setUpdateConsumer((gen, c) -> update(gen, c.getColors(), c.getScore(), graph.getCoordinates().size()));
         state = SolverState.RUNNING;
         updateStatus();
-        while(true) {
-            int prevUnique = unique;
-            shuffleIndices();
-            update(colorIndices, unique, graph.getCoordinates().size());
-            unique = Math.max(unique - unique / 10, 1);
-            try {
-                Thread.sleep(1000);
-            }
-            catch(InterruptedException e){}
-
-            if(prevUnique == unique) {
-                break;
-            }
-        }
+        solver.solve(10000);
         state = SolverState.FINISHED;
         updateStatus();
     }
@@ -85,9 +78,25 @@ public class GraphSolver implements Runnable {
         FINISHED
     }
 
-    public void update(int[] colors, int uniqueColors, int startingColors) {
+    public void update(int generation, int[] colors, int uniqueColors, int startingColors) {
         LOG.debug("Update(unique: {})", uniqueColors);
-        broker.convertAndSend("/topic/update", new UpdateMessage(colors, uniqueColors, startingColors));
+        shiftColors(colors);
+        broker.convertAndSend("/topic/update", new UpdateMessage(generation, colors, uniqueColors, startingColors));
+    }
+
+    private static void shiftColors(int[] colors) {
+        int index = 0;
+        Map<Integer, Integer> colorMap = new HashMap<>();
+        for(int i = 0;i < colors.length;i++) {
+            if(!colorMap.containsKey(colors[i])) {
+                colorMap.put(colors[i], index);
+                colors[i] = index;
+                index++;
+            }
+            else {
+                colors[i] = colorMap.get(colors[i]);
+            }
+        }
     }
 
     public void updateStatus() {
@@ -96,12 +105,14 @@ public class GraphSolver implements Runnable {
     }
 
     public static class UpdateMessage {
-        public int[] colors;
-        public int uniqueColors;
-        public int startingColors;
-        public long time;
+        public final int[] colors;
+        public final int uniqueColors;
+        public final int startingColors;
+        public final int generation;
+        public final long time;
 
-        public UpdateMessage(int[] colors, int uniqueColors, int startingColors) {
+        public UpdateMessage(int generation, int[] colors, int uniqueColors, int startingColors) {
+            this.generation = generation;
             this.colors = colors;
             this.uniqueColors = uniqueColors;
             this.startingColors = startingColors;
