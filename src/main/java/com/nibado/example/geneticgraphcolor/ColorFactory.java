@@ -1,41 +1,50 @@
 package com.nibado.example.geneticgraphcolor;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ColorFactory {
-    private static final int BASE_COLORS = 16;
+    private static final List<Color> BASE_COLORS = Arrays.asList(
+            new Color(230, 25, 75),
+            new Color(60, 180, 75),
+            new Color(255, 225, 25),
+            new Color(0, 130, 200),
+            new Color(245, 130, 48),
+            new Color(145, 30, 180),
+            new Color(70, 240, 240),
+            new Color(240, 50, 230),
+            new Color(210, 245, 60),
+            new Color(250, 190, 190),
+            new Color(0, 128, 128),
+            new Color(230, 190, 255),
+            new Color(170, 110, 40),
+            new Color(255, 250, 200),
+            new Color(128, 0, 0),
+            new Color(170, 255, 195),
+            new Color(128, 128, 0),
+            new Color(255, 215, 180),
+            new Color(0, 0, 128),
+            new Color(128, 128, 128),
+            new Color(255, 255, 255),
+            new Color(0, 0, 0)
+    );
+
     private static final Random RANDOM = new Random();
-    private List<Color> baseColors;
-
-    public ColorFactory() {
-        baseColors = new ArrayList<>(16);
-
-        for(int i = 0;i < BASE_COLORS;i++) {
-            float h = (float)i / (float)BASE_COLORS;
-            baseColors.add(Color.getHSBColor(h, 1.0f, 1.0f));
-        }
-    }
 
     public List<Color> create(int number) {
         List<Color> colors = new ArrayList<>(number);
         Set<Color> colorSet = new HashSet<>();
-        if(number <= BASE_COLORS) {
-            return baseColors.subList(0, number);
+        if (number <= BASE_COLORS.size()) {
+            return BASE_COLORS.subList(0, number);
         }
 
-        colors.addAll(baseColors);
-        colorSet.addAll(baseColors);
+        colors.addAll(BASE_COLORS);
+        colorSet.addAll(BASE_COLORS);
 
-        while(colors.size() < number) {
+        while (colors.size() < number) {
             Color c = new Color(RANDOM.nextInt(256), RANDOM.nextInt(256), RANDOM.nextInt(256));
-            if(!colorSet.contains(c)) {
+            if (!colorSet.contains(c)) {
                 colors.add(c);
                 colorSet.add(c);
             }
